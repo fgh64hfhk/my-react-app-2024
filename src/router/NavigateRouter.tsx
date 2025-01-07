@@ -1,17 +1,18 @@
 import { useEffect } from "react";
 import { useLocation, NavLink, Routes, Route } from "react-router-dom";
 import "./NavigateRouter.css"; // 引入样式文件
+import StockTradingApp from "../stock/StockTrading";
 
 function Home() {
-  return <h2 className="page-title">Home Page</h2>;
+  return <h1 className="page-title">Home Page</h1>;
 }
 
 function Profile() {
-  return <h2 className="page-title">Profile Page</h2>;
+  return <h1 className="page-title">Profile Page</h1>;
 }
 
 function Settings() {
-  return <h2 className="page-title">Settings Page</h2>;
+  return <h1 className="page-title">Settings Page</h1>;
 }
 
 // 置頂元件
@@ -56,8 +57,16 @@ function NavigateRouter() {
               Settings
             </NavLink>
           </li>
+          {/* 股票儀表板 */}
+          <li>
+            <NavLink
+              to="/stock"
+              className={({ isActive }) => (isActive ? "active-link" : "")}
+            >
+              Stock Trading Application
+            </NavLink>
+          </li>
         </ul>
-        {/* 股票儀表板 */}
       </nav>
       {/* 右側內容 */}
       <main className="content">
@@ -65,6 +74,7 @@ function NavigateRouter() {
           <Route path="/" element={<Home />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/stock" element={<StockTradingApp />} />
         </Routes>
       </main>
     </div>

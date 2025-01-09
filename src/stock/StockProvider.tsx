@@ -35,7 +35,7 @@ interface StockHistory {
 }
 
 const initialStock = [
-  { symbol: "AAPL", price: 50, priceChange: 0 },
+  { symbol: "AAPL", price: 180, priceChange: 0 },
   { symbol: "GOOG", price: 40, priceChange: 0 },
   { symbol: "AMZN", price: 20, priceChange: 0 },
   { symbol: "NVDA", price: 30, priceChange: 0 },
@@ -140,7 +140,7 @@ const StockProvider = ({ children }: StockProviderProps) => {
   }, []); // 沒有依賴，所以依賴陣列為空
 
   useEffect(() => {
-    const interval = setInterval(updateStockPrice, 500); // 每5秒更新一次價格
+    const interval = setInterval(updateStockPrice, 500); // 每0.5秒更新一次價格
     return () => clearInterval(interval); // 清除定時器
   }, [updateStockPrice]); // 添加依賴，避免 ESLint 警告
 

@@ -73,7 +73,13 @@ function StockTrading() {
           {stocks.map((stock) => (
             <li key={stock.symbol}>
               <div>
-                股票代碼: {stock.symbol}, 股票價格: {stock.price}, 股票價格變動百分比: {Math.abs(stock.priceChange) > 3 ? <span style={{color: 'red'}}>{stock.priceChange}</span> : <span style={{color: 'blue'}}>{stock.priceChange}</span>}
+                股票代碼: {stock.symbol}, 股票價格: {stock.price},
+                股票價格變動百分比:{" "}
+                {Math.abs(stock.priceChange) > 3 ? (
+                  <span style={{ color: "red" }}>{stock.priceChange}</span>
+                ) : (
+                  <span style={{ color: "blue" }}>{stock.priceChange}</span>
+                )}
               </div>
               <button
                 onClick={() =>
@@ -242,11 +248,12 @@ interface ProfitLoss {
 }
 interface Action {
   type: "BUY" | "SELL"; // 動作類型:買入或賣出
-  payload: {
-    symbol: string; // 股票符號
-    amount: number; // 賣出或買入的數量
-    price?: number; // 股票價格，用於計算交易金額
-  };
+  payload: Payload;
+}
+interface Payload {
+  symbol: string; // 股票符號
+  amount: number; // 賣出或買入的數量
+  price?: number; // 股票價格，用於計算交易金額
 }
 // 定義 Reducer -> 動作類型與資料載體
 const portfolioReducer = (
@@ -281,7 +288,9 @@ const portfolioReducer = (
       if (balance < transaction) {
         return {
           ...state,
-          errorMessage: `你的餘額 ${balance.toFixed(2)} USD 不足以購買 ${symbol}:${price} USD ${amount} 股。`,
+          errorMessage: `你的餘額 ${balance.toFixed(
+            2
+          )} USD 不足以購買 ${symbol}:${price} USD ${amount} 股。`,
         };
       }
       // 更新投資組合
@@ -294,8 +303,6 @@ const portfolioReducer = (
             (currentAmount + amount), // 更新平均購入價格
         },
       };
-
-      // TODO 需要撰寫餘額用完的提示
 
       return {
         ...state,

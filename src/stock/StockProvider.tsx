@@ -18,6 +18,7 @@ interface Stock {
 const StockContext = createContext<
   | {
       stocks: Stock[];
+      stockHistory: StockHistory;
       updateStockPrice: () => void;
     }
   | undefined
@@ -28,8 +29,10 @@ interface StockProviderProps {
   children: ReactNode;
 }
 
-// TODO 定義股票價格歷史紀錄表
-// TODO 將歷史紀錄表轉換成動態圖表顯示
+// 定義股票價格歷史紀錄表
+interface StockHistory {
+  [symbol: string]: { timestamp: number; price: number }[];
+}
 
 const initialStock = [
   { symbol: "AAPL", price: 50, priceChange: 0 },
@@ -38,8 +41,16 @@ const initialStock = [
   { symbol: "NVDA", price: 30, priceChange: 0 },
 ];
 
+// 將歷史紀錄表轉換成動態圖表顯示 D3 Financial Components (D3FC)
+const initialStockHistory = initialStock.reduce((history, stock) => {
+  history[stock.symbol] = [{ timestamp: Date.now(), price: stock.price }];
+  return history;
+}, {} as StockHistory);
+
 const StockProvider = ({ children }: StockProviderProps) => {
   const [stocks, setStocks] = useState<Stock[]>(initialStock);
+  const [stockHistory, setStockHistory] =
+    useState<StockHistory>(initialStockHistory);
 
   // Box-Muller Transform
   const generateNormalRandom = () => {
@@ -57,11 +68,13 @@ const StockProvider = ({ children }: StockProviderProps) => {
     const baseVolatility = 0.02;
     // 市場負趨勢因子(降息預期減弱)
     const marketTrend = -0.001;
-    // 大波動模擬
+    // 大波動模擬(黑天鵝事件)
     const blackSwanProbability = 0.01; // 1% 機率發生大波動
 
-    setStocks((prevStocks) =>
-      prevStocks.map((stock) => {
+    // 更新股票
+    setStocks((prevStocks) => {
+      // 準備已更新價格的股票
+      const updatedStocks = prevStocks.map((stock) => {
         // 基礎波動（正態隨機波動）
         const randomFluctuation = generateNormalRandom() * baseVolatility;
 
@@ -76,17 +89,18 @@ const StockProvider = ({ children }: StockProviderProps) => {
 
         // 長期正趨勢因子(Siri 發展)
         let longTermTrend = 0;
-        if (stock.symbol === 'AAPL') {
+        if (stock.symbol === "AAPL") {
           longTermTrend = 0.003;
         }
 
         // 累計所有變化因素
-        const totalChange = randomFluctuation + longTermTrend + marketTrend + extraChange;
+        const totalChange =
+          randomFluctuation + longTermTrend + marketTrend + extraChange;
 
         let newPrice = stock.price * (1 + totalChange);
 
         // 跌幅反彈機制
-        if ((newPrice / stock.price - 1) <= -0.05) {
+        if (newPrice / stock.price - 1 <= -0.05) {
           const reboundFactor = 0.02; // 反彈因子
           newPrice *= 1 + reboundFactor;
         }
@@ -102,8 +116,27 @@ const StockProvider = ({ children }: StockProviderProps) => {
             (((newPrice - stock.price) / stock.price) * 100).toFixed(2)
           ),
         };
-      })
-    );
+      });
+
+      // 更新股票歷史數據
+    setStockHistory((prevHistory) => {
+      const newHistory = { ...prevHistory };
+      updatedStocks.forEach((stock) => {
+        // 如果歷史數據內沒有對應的股票代碼，新增進去
+        if (!newHistory[stock.symbol]) {
+          newHistory[stock.symbol] = [];
+        }
+        newHistory[stock.symbol].push({
+          timestamp: Date.now(),
+          price: stock.price,
+        });
+      });
+      return newHistory;
+    });
+      return updatedStocks;
+    });
+
+    
   }, []); // 沒有依賴，所以依賴陣列為空
 
   useEffect(() => {
@@ -112,7 +145,7 @@ const StockProvider = ({ children }: StockProviderProps) => {
   }, [updateStockPrice]); // 添加依賴，避免 ESLint 警告
 
   return (
-    <StockContext.Provider value={{ stocks, updateStockPrice }}>
+    <StockContext.Provider value={{ stocks, stockHistory, updateStockPrice }}>
       {children}
     </StockContext.Provider>
   );

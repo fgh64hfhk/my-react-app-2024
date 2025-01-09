@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation, NavLink, Routes, Route } from "react-router-dom";
 import "./NavigateRouter.css"; // 引入样式文件
 import StockTradingApp from "../stock/StockTrading";
+import StockChartApp from "../stock/StockPage";
 
 function Home() {
   return <h1 className="page-title">Home Page</h1>;
@@ -66,6 +67,15 @@ function NavigateRouter() {
               Stock Trading Application
             </NavLink>
           </li>
+          {/* 股票圖表 */}
+          <li>
+            <NavLink
+              to="/chart"
+              className={({ isActive }) => (isActive ? "active-link" : "")}
+            >
+              Stock Chart Application
+            </NavLink>
+          </li>
         </ul>
       </nav>
       {/* 右側內容 */}
@@ -75,6 +85,7 @@ function NavigateRouter() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/stock" element={<StockTradingApp />} />
+          <Route path="/chart" element={<StockChartApp />} />
         </Routes>
       </main>
     </div>

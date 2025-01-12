@@ -1,8 +1,14 @@
-import React, { useContext, useMemo, useEffect } from "react";
+import React, { useContext, useEffect, useLayoutEffect } from "react";
 import { StockContext } from "./StockContext";
+import { StockTable } from "./components/StockTable";
 import StockChart from "./StockChart";
+// import { LoadingSpinner } from "./components/LoadingSpinner";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { useMarketSimulation } from "./hooks/useMarketSimulation";
 
-const StockDashboard: React.FC = () => {
+import "./StockChart.css";
+
+export const StockDashboard: React.FC = () => {
   const stockContext = useContext(StockContext);
 
   if (!stockContext) {
@@ -17,6 +23,26 @@ const StockDashboard: React.FC = () => {
     setSimulationConfig,
     updateStockPrice,
   } = stockContext;
+
+  // 使用自定義 Hook 處理市場模擬配置
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useMarketSimulation(addMarketEvent, setSimulationConfig);
+
+  // 處理價格更新
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useLayoutEffect(() => {
+    let isMounted = true;
+    const interval = setInterval(() => {
+      if (isMounted) {
+        updateStockPrice();
+      }
+    }, config.updateInterval);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [updateStockPrice, config.updateInterval]);
 
   // 模擬配置（建議移到 useEffect 中）
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -47,59 +73,27 @@ const StockDashboard: React.FC = () => {
     }
   }, [addMarketEvent, setSimulationConfig]); // 只在組件掛載時執行
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    const interval = setInterval(updateStockPrice, config.updateInterval);
-    return () => clearInterval(interval);
-  }, [updateStockPrice, config.updateInterval]);
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    console.log("History update:", stockHistory); // 添加日誌
-  }, [stockHistory]);
-
-  // 緩存股票表格數據
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const stockTableRows = useMemo(
-    () =>
-      stocks.map((stock) => (
-        <tr key={stock.symbol}>
-          <td>{stock.symbol}</td>
-          <td>{stock.price}</td>
-          <td>{stock.dayHigh}</td>
-          <td>{stock.dayLow}</td>
-          <td>{stock.volume}</td>
-        </tr>
-      )),
-    [stocks]
-  );
-
   return (
     <div>
       <h1>Stock Dashboard</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Symbol</th>
-            <th>Price</th>
-            <th>Day High</th>
-            <th>Day Low</th>
-            <th>Volume</th>
-          </tr>
-        </thead>
-        <tbody>{stockTableRows}</tbody>
-      </table>
 
-      <div className="stock-app">
-        <h1>Real-time Stock Charts</h1>
-        <div className="stock-grid">
-          {Object.entries(stockHistory).map(([symbol, history]) => (
-            <div key={symbol} className="stock-item">
-              <StockChart symbol={symbol} history={history} />
-            </div>
-          ))}
+      <ErrorBoundary>
+        <div>
+          <h2>Stock Table</h2>
+          <StockTable stocks={stocks} />
         </div>
-      </div>
+
+        <div className="stock-app">
+          <h2>Real-time Stock Charts</h2>
+          <div className="stock-grid">
+            {Object.entries(stockHistory).map(([symbol, history]) => (
+              <div key={symbol} className="stock-item">
+                <StockChart symbol={symbol} history={history} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </ErrorBoundary>
     </div>
   );
 };

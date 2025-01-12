@@ -1,6 +1,6 @@
 // 管理用户资产和交易操作
 import { useContext, useEffect, useMemo, useReducer } from "react";
-import { StockProvider, StockContext } from "./StockProvider";
+import { StockProvider, StockContext } from "./StockContext";
 
 // 主組件的邏輯
 function StockTrading() {

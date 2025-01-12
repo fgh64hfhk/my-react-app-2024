@@ -13,6 +13,7 @@ import { initialStocks, initialConfig } from "./initialData";
 export const StockContext = createContext<{
   stocks: Stock[];
   stockHistory: StockHistory;
+  config: SimulationConfig;
   updateStockPrice: () => void;
   addMarketEvent: (event: MarketEvent) => void;
   setSimulationConfig: (config: SimulationConfig) => void;
@@ -60,10 +61,10 @@ export const StockProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(updateStockPrice, config.updateInterval);
-    return () => clearInterval(interval);
-  }, [updateStockPrice, config.updateInterval]);
+  // useEffect(() => {
+  //   const interval = setInterval(updateStockPrice, config.updateInterval);
+  //   return () => clearInterval(interval);
+  // }, [updateStockPrice, config.updateInterval]);
 
   useEffect(() => {
     marketSimulator.current = new MarketSimulator(config);
@@ -74,6 +75,7 @@ export const StockProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         stocks,
         stockHistory,
+        config,
         updateStockPrice,
         addMarketEvent: marketSimulator.current.addMarketEvent.bind(
           marketSimulator.current

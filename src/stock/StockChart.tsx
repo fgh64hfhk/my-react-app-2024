@@ -1,13 +1,5 @@
-import React, { useRef } from "react";
+import React, { useRef, useMemo, useEffect } from "react";
 import * as d3 from "d3";
-
-import type { BaseType } from "d3-selection";
-import type { Transition } from "d3-transition";
-import type { NumberValue } from "d3";
-
-// 定義更精確的型別
-// type AxisSelection = Selection<SVGGElement, unknown, BaseType, unknown>;
-type AxisTransition = Transition<SVGGElement, unknown, BaseType, unknown>;
 
 interface StockChartProps {
   history: { timestamp: number; price: number }[];
@@ -17,94 +9,126 @@ interface StockChartProps {
 const StockChart: React.FC<StockChartProps> = ({ history, symbol }) => {
   const chartRef = useRef<SVGSVGElement | null>(null);
   const pathRef = useRef<SVGPathElement | null>(null);
+  const xAxisRef = useRef<SVGGElement | null>(null);
+  const yAxisRef = useRef<SVGGElement | null>(null);
 
-  //   const currentPathRef = pathRef.current;
-  const currentChartRef = chartRef.current;
+  // console.log("Chart FC: ", history.length);
 
-  //   console.log("Chart chartRef: ", currentChartRef);
-  //   console.log("Chart pathRef: ", currentPathRef);
+  // 圖表尺寸
+  const dimensions = useMemo(
+    () => ({
+      width: 500,
+      height: 300,
+      margin: { top: 20, right: 30, bottom: 30, left: 40 },
+    }),
+    []
+  );
 
-  const width = 500;
-  const height = 300;
-  const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+  // 比例尺
+  const scales = useMemo(() => {
+    // console.log("useMemo for scales: 1 -> ", dimensions);
+    const x = d3
+      .scaleTime()
+      .domain(d3.extent(history, (d) => new Date(d.timestamp)) as [Date, Date])
+      .range([
+        dimensions.margin.left,
+        dimensions.width - dimensions.margin.right,
+      ]);
 
-  // 使用 D3 繪製圖表
-  const svg = d3.select(currentChartRef);
+    const y = d3
+      .scaleLinear()
+      .domain([
+        (d3.min(history, (d) => d.price) ?? 0) * 0.95,
+        (d3.max(history, (d) => d.price) ?? 0) * 1.05,
+      ])
+      .nice()
+      .range([
+        dimensions.height - dimensions.margin.bottom,
+        dimensions.margin.top,
+      ]);
 
-  svg.selectAll("*").remove(); // 清空已有的圖表內容
+    return { x, y };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dimensions, history, history.length]);
 
-  pathRef.current = svg
-    .append("path")
-    .attr("fill", "none")
-    .attr("stroke", "steelblue")
-    .attr("stroke-width", 1.5)
-    .node();
+  // 初始化圖表
+  useEffect(() => {
+    // console.log("useEffect for init: 2 -> ", dimensions);
+    const svg = d3.select(chartRef.current);
 
-  // 添加坐標軸群組
-  svg
-    .append("g")
-    .attr("class", "x-axis")
-    .attr("transform", `translate(0,${height - margin.bottom})`);
+    // 清空並初始化
+    svg.selectAll("*").remove();
 
-  svg
-    .append("g")
-    .attr("class", "y-axis")
-    .attr("transform", `translate(${margin.left},0)`);
+    // 路徑
+    const path = svg
+      .append("path")
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 1.5);
+    pathRef.current = path.node();
 
-  // 更新比例尺
-  const x = d3
-    .scaleTime()
-    .domain(d3.extent(history, (d) => new Date(d.timestamp)) as [Date, Date])
-    .range([margin.left, width - margin.right]);
+    // 坐標軸
+    const xAxis = svg
+      .append("g")
+      .attr("class", "x-axis")
+      .attr(
+        "transform",
+        `translate(0,${dimensions.height - dimensions.margin.bottom})`
+      );
 
-  const y = d3
-    .scaleLinear()
-    .domain([
-      (d3.min(history, (d) => d.price) ?? 0) * 0.95, // 下限設為最低價的95%
-      (d3.max(history, (d) => d.price) ?? 0) * 1.05 || 100, // 上限設為最高價的105%
-    ])
-    .nice()
-    .range([height - margin.bottom, margin.top]);
+    const yAxis = svg
+      .append("g")
+      .attr("class", "y-axis")
+      .attr("transform", `translate(${dimensions.margin.left},0)`);
 
-  // 更新坐標軸
-  svg
-    .select<SVGGElement>(".x-axis")
-    .transition()
-    .duration(300)
-    .call((g: AxisTransition) => {
-      const xAxis = d3.axisBottom(x).tickFormat((d: NumberValue) => {
-        return d3.timeFormat("%H:%M")(new Date(d.valueOf()));
-      });
-      (xAxis as unknown as (selection: AxisTransition) => void)(g);
-    });
+    xAxisRef.current = xAxis.node();
+    yAxisRef.current = yAxis.node();
+  }, [dimensions]);
 
-  svg
-    .select<SVGGElement>(".y-axis")
-    .transition()
-    .duration(300)
-    .call((g: AxisTransition) => {
-      const yAxis = d3.axisLeft(y);
-      (yAxis as unknown as (selection: AxisTransition) => void)(g);
-    });
+  // 更新圖表
+  useEffect(() => {
+    // console.log("useEffect for update: 3 -> ", scales);
+    if (!pathRef.current || !xAxisRef.current || !yAxisRef.current) return;
 
-  // 更新線條
-  const line = d3
-    .line<{ timestamp: number; price: number }>()
-    .x((d) => x(new Date(d.timestamp)))
-    .y((d) => y(d.price))
-    .curve(d3.curveMonotoneX);
+    // 更新路徑
+    const line = d3
+      .line<{ timestamp: number; price: number }>()
+      .x((d) => scales.x(new Date(d.timestamp)))
+      .y((d) => scales.y(d.price))
+      .curve(d3.curveCardinal.tension(1));
 
-  // 使用過渡效果更新路徑
-  d3.select(pathRef.current)
-    .datum(history)
-    .transition()
-    .duration(300)
-    .attr("d", line);
+    d3.select(pathRef.current)
+      .datum(history)
+      // .transition()
+      // .duration(300)
+      .attr("d", line);
+
+    // 更新 X 軸
+    d3.select(xAxisRef.current)
+      .transition()
+      .duration(300)
+      .call(
+        d3
+          .axisBottom(scales.x)
+          .tickFormat((d) => d3.timeFormat("%H:%M")(new Date(d as number)))
+      );
+
+    // 更新 Y 軸
+    d3.select(yAxisRef.current)
+      .transition()
+      .duration(300)
+      .call(d3.axisLeft(scales.y));
+  }, [scales, history, history.length]);
 
   return (
     <div className="stock-chart">
       <h3>{symbol} Stock Price</h3>
-      <svg ref={chartRef} width={500} height={300}></svg>
+      <svg
+        ref={chartRef}
+        width={dimensions.width}
+        height={dimensions.height}
+      ></svg>
+      {!history.length && <div>Waiting for data...</div>}
     </div>
   );
 };

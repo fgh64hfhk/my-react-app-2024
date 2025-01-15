@@ -22,18 +22,17 @@ export class MarketSimulator {
       SEMI: ["NVDA"],
     };
 
-    this.marketMood = 0;
+    this.marketMood = 0.2;
+    
+    // TODO
     this.activeEvents = [];
+
+    // default
     this.config = config;
   }
 
   private generateVolatility(baseVolatility: number): number {
     return generateNormalRandom(0, baseVolatility);
-  }
-
-  updateMarketMood() {
-    const moodChange = (Math.random() - 0.5) * 0.1;
-    this.marketMood = Math.max(-1, Math.min(1, this.marketMood + moodChange));
   }
 
   addMarketEvent(event: MarketEvent) {
@@ -50,8 +49,6 @@ export class MarketSimulator {
     symbol: string,
     currentPrice: number
   ): { newPrice: number; volume: number; high: number; low: number } {
-    this.updateMarketMood();
-
     const baseVolatility = this.volatilityMap[symbol] || 0.02;
     const marketImpact = this.marketMood * this.config.marketTrendStrength;
     const eventImpact = this.calculateEventImpact(symbol);

@@ -7,7 +7,7 @@ import App from "./App.tsx";
 
 import { StockProvider } from "./stock/StockContext.tsx";
 
-import "./stock/StockChart.css"
+import "./index.css"
 
 // function sendToAnalytics(metric: Metric) {
 //   这里可以将数据发送到你的分析服务

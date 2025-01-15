@@ -1,9 +1,9 @@
-import StockDashboard from './stock/StockDashboard';
+import StockTradingDashboard from "./stock/stock-trading-dashboard";
 
 const App = () => {
   return (
     <div>
-      <StockDashboard />
+      <StockTradingDashboard />
     </div>
   );
 };
